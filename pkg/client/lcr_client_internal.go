@@ -1,6 +1,7 @@
 package golcr
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -33,6 +34,19 @@ func (c *lcrClient) connect(creds Creds) error {
 	r.Header.Add("Content-Length", strconv.Itoa(len(data.Encode())))
 
 	res, err := c.client.Do(r)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return err
+	}
+
+	if strings.Contains(string(body), "<title>Sign in</title>") {
+		return errors.New("unable to log in with credentials")
+	}
 
 	setCookie := res.Header["Set-Cookie"]
 	val := strings.Split(setCookie[0], ";")
